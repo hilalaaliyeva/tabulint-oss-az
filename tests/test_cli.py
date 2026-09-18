@@ -32,6 +32,15 @@ def test_dataset_with_issues_exits_one(write, capsys):
     assert "duplicate-record" in capsys.readouterr().out
 
 
+def test_missing_value_summary_is_shown_in_cli_output(write, capsys):
+    path = write("missing.csv", "name,age,city\nAda,36,\nGrace,,Baku\nTuring,,\n")
+    assert main([path]) == EXIT_ISSUES
+    output = capsys.readouterr().out
+    assert "  missing values:" in output
+    assert "    age: 2 missing (66.7%)" in output
+    assert "    city: 2 missing (66.7%)" in output
+
+
 def test_ndjson_dataset_with_duplicates_exits_one(write, capsys):
     path = write("dupes.ndjson", '{"name": "Ada", "age": 36}\n{"name": "Ada", "age": 36}\n')
     assert main([path]) == EXIT_ISSUES

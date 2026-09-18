@@ -36,6 +36,8 @@ tabulint: people.csv
   fields:
     name  string
     age   integer (1 missing)
+  missing values:
+    age: 1 missing (25%)
   issues: 2
     [warning] row 3: missing-value: field 'age' has a missing value
     [error] row 4: type-mismatch: field 'age' expects integer but value 'old' looks like string

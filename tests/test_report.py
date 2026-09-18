@@ -82,7 +82,7 @@ def test_json_report_does_not_truncate_issues():
     assert "and 10 more" not in format_report_json(report)
 
 
-def test_text_report_is_unchanged():
+def test_text_report_includes_missing_value_summary():
     report = Report(
         path="people.csv",
         row_count=2,
@@ -95,7 +95,62 @@ def test_text_report_is_unchanged():
         "  records: 2\n"
         "  fields:\n"
         "    age  integer (1 missing)\n"
+        "  missing values:\n"
+        "    age: 1 missing (50%)\n"
         "  issues: 1\n"
         "    [warning] row 2: missing-value: age is missing\n"
         "  summary: 0 error(s), 1 warning(s)"
     )
+
+
+def test_text_report_missing_value_summary_lists_counts_and_percentages():
+    report = Report(
+        path="people.csv",
+        row_count=3,
+        profiles=[
+            FieldProfile("city", "string", missing_count=2),
+            FieldProfile("age", "integer", missing_count=1),
+        ],
+    )
+
+    assert format_report(report) == (
+        "tabulint: people.csv\n"
+        "  records: 3\n"
+        "  fields:\n"
+        "    city  string (2 missing)\n"
+        "    age   integer (1 missing)\n"
+        "  missing values:\n"
+        "    city: 2 missing (66.7%)\n"
+        "    age: 1 missing (33.3%)\n"
+        "  no issues found"
+    )
+
+
+def test_text_report_missing_value_summary_omits_complete_fields():
+    report = Report(
+        path="people.csv",
+        row_count=2,
+        profiles=[
+            FieldProfile("name", "string", missing_count=0),
+            FieldProfile("age", "integer", missing_count=0),
+        ],
+    )
+
+    output = format_report(report)
+    assert "missing values:" not in output
+
+
+def test_text_report_missing_value_summary_sorts_by_count_then_name():
+    report = Report(
+        path="people.csv",
+        row_count=4,
+        profiles=[
+            FieldProfile("zeta", "string", missing_count=2),
+            FieldProfile("alpha", "string", missing_count=2),
+            FieldProfile("beta", "string", missing_count=1),
+        ],
+    )
+
+    output = format_report(report)
+    assert output.index("    alpha: 2 missing (50%)") < output.index("    zeta: 2 missing (50%)")
+    assert output.index("    zeta: 2 missing (50%)") < output.index("    beta: 1 missing (25%)")

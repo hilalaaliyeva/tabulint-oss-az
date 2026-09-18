@@ -11,6 +11,16 @@ def _location(row: int | None) -> str:
     return f"row {row}" if row is not None else "dataset"
 
 
+def _format_missing_percentage(missing_count: int, row_count: int) -> str:
+    if row_count <= 0:
+        return "0%"
+
+    percentage = (missing_count / row_count) * 100
+    if percentage.is_integer():
+        return f"{int(percentage)}%"
+    return f"{percentage:.1f}%"
+
+
 def format_report(report: Report) -> str:
     """Render a report as plain text."""
     lines = [f"tabulint: {report.path}", f"  records: {report.row_count}"]
@@ -21,6 +31,13 @@ def format_report(report: Report) -> str:
         for profile in report.profiles:
             note = f" ({profile.missing_count} missing)" if profile.missing_count else ""
             lines.append(f"    {profile.name.ljust(width)}  {profile.dominant_type}{note}")
+
+    missing_profiles = [profile for profile in report.profiles if profile.missing_count > 0]
+    if missing_profiles:
+        lines.append("  missing values:")
+        for profile in sorted(missing_profiles, key=lambda p: (-p.missing_count, p.name)):
+            percentage = _format_missing_percentage(profile.missing_count, report.row_count)
+            lines.append(f"    {profile.name}: {profile.missing_count} missing ({percentage})")
 
     if report.ok:
         lines.append("  no issues found")
